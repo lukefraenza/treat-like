@@ -1,0 +1,1 @@
+export const tuple = <T extends any[]>(...items: T) => items;
