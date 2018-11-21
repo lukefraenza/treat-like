@@ -75,7 +75,9 @@ const continueConvertingChain = <I, C, N>(converter: Converter<C, N>, prev: Chai
     return chain;
 };
 
-const isChain = (obj: any): obj is Chain<any, any> => obj.hasOwnProperty("apply");
+const isChain = (obj: any): obj is Chain<any, any> => {
+    return typeof obj === "object" && obj !== null && obj.hasOwnProperty("apply");
+};
 
 export const treatLike = async <S>(schema: S, input: Input<S>): Promise<Report<S>> => {
     // primitive
@@ -85,71 +87,64 @@ export const treatLike = async <S>(schema: S, input: Input<S>): Promise<Report<S
                 ok: true,
                 value,
             }) as OkReport<S>)
-            .catch((error) => ({
+            .catch((error: Error) => ({
                 ok: false,
-                error: error.toString(),
+                error: error.message,
             }) as ErrorReport<S>);
     }
 
     // List
     if (Array.isArray(schema) && schema.length === 1) {
         const subSchema = head(schema);
+        const inputList = (Array.isArray(input) ? input : []) as typeof schema;
 
-        if (Array.isArray(input)) {
-            const subReports = await Promise.all(input.map((subInput) => treatLike(subSchema, subInput)));
+        const subReports = await Promise.all(inputList.map((subInput) => treatLike(subSchema, subInput)));
 
-            const ok = all((report) => report.ok, subReports);
+        const ok = all((report) => report.ok, subReports);
 
-            const value = subReports.map((report) => report.value);
-            const error = subReports.map((report) => report.error);
+        const value = subReports.map((report) => report.value);
+        const error = subReports.map((report) => report.error);
 
-            return {ok, value, error} as any as Report<S>;
-        }
-
-        // TODO: What to do if input is not array?
+        return {ok, value, error} as any as Report<S>;
     }
 
     // tuple
     if (Array.isArray(schema) && schema.length > 1) {
-        if (Array.isArray(input)) {
-            const subReports = await Promise.all(input.map((subInput, i) => treatLike(schema[i], subInput)));
+        const inputTuple = (Array.isArray(input) ? input : []) as typeof schema;
 
-            const ok = all((report) => report.ok, subReports);
+        const subReports = await Promise.all(schema.map((subSchema, i) => treatLike(subSchema, inputTuple[i])));
 
-            const value = subReports.map((report) => report.value);
-            const error = subReports.map((report) => report.error);
+        const ok = all((report) => report.ok, subReports);
 
-            return {ok, value, error} as any as Report<S>;
-        }
+        const value = subReports.map((report) => report.value);
+        const error = subReports.map((report) => report.error);
 
-        // TODO: What to do if input is not array?
+        return {ok, value, error} as any as Report<S>;
     }
 
     // dict
     if (typeof schema === "object" && schema !== null) {
-        if (typeof input === "object" && input !== null) {
+        const inputDict = ((input === null || typeof input !== "object") ? {} : input) as typeof schema;
 
-            const keys = Object.keys(schema) as Array<keyof typeof schema>;
+        const keys = Object.keys(schema) as Array<keyof typeof schema>;
 
-            const subReports = await Promise.all(
-                keys.map(async (key) => {
-                    const subSchema = schema[key];
-                    const subInput = (input as typeof schema)[key];
+        const subReports = await Promise.all(
+            keys.map(async (key) => {
+                const subSchema = schema[key];
+                const subInput = inputDict[key];
 
-                    const report = await treatLike(subSchema, subInput as Input<typeof subSchema>);
+                const report = await treatLike(subSchema, subInput as Input<typeof subSchema>);
 
-                    return {key, report};
-                }),
-            );
+                return {key, report};
+            }),
+        );
 
-            const ok = all((item) => item.report.ok, subReports);
-            const value = subReports.map((item) => ({[item.key]: item.report.value})).reduce(merge);
-            const error = subReports.map((item) => ({[item.key]: item.report.error})).reduce(merge);
+        const ok = all((item) => item.report.ok, subReports);
+        const value = subReports.map((item) => ({[item.key]: item.report.value})).reduce(merge);
+        const error = subReports.map((item) => ({[item.key]: item.report.error})).reduce(merge);
 
-            return {ok, value, error} as any as Report<S>;
-        }
+        return {ok, value, error} as any as Report<S>;
 
-        // TODO: What to do if input is not object?
     }
 
     return {ok: false, error: "not suitable", value: undefined} as ErrorReport<S>;

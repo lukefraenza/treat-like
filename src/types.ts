@@ -9,9 +9,9 @@ export interface Chain<I, C> {
 }
 
 export type Input<S> =
-    S extends Chain<infer I, any> ? I :
-        S extends { [K: string]: any } ? { [K in keyof S]: Input<S[K]> } :
-            S;
+    S extends Chain<infer I, any> ? I | undefined :
+        S extends { [K: string]: any } ? { [K in keyof S]?: Input<S[K]> } :
+            S | undefined;
 
 export type FullOutput<S> =
     S extends Chain<any, infer C> ? C :
