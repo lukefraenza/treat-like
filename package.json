@@ -15,6 +15,10 @@
   ],
   "author": "Konstantin Alikhanov",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atomAltera/treat-like"
+  },
   "devDependencies": {
     "@types/jest": "^23.3.9",
     "@types/ramda": "^0.25.42",
