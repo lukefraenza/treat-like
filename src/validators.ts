@@ -11,6 +11,8 @@ export const lte = (x: Sizable) => (y: Sizable): boolean => sizeof(y) <= sizeof(
 export const positive = (value: number): boolean => gt(0)(value);
 export const negative = (value: number): boolean => lt(0)(value);
 
+export const match = (pattern: RegExp) => (value: string): boolean => value.match(pattern) !== null;
+
 export const optionalTypeCheck = (type: "string" | "number" | "boolean" | "object") =>
     (value: any) => {
         if (value === undefined) {

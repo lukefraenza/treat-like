@@ -61,6 +61,6 @@
   ],
   "exclude": [
     "./src/web/frontend",
-    "./src/**/.*ts"
+    "./src/**/**.test*ts"
   ]
 }

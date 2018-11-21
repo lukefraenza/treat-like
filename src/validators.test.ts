@@ -1,4 +1,4 @@
-import {gt, gte, lt, lte, negative, optionalTypeCheck, positive, provided} from "./validators";
+import {gt, gte, lt, lte, match, negative, optionalTypeCheck, positive, provided} from "./validators";
 
 describe("provided", () => {
     [
@@ -109,6 +109,16 @@ describe("negative", () => {
                     expect(negative(n)).toBe(expectedResult),
                 ),
         );
+});
+
+describe("match", () => {
+    test("it matches if value matches regexp", () => {
+        expect(match(/^\d+$/)("1238172638")).toBeTruthy();
+    }) ;
+
+    test("it not matches if value not matches regexp", () => {
+        expect(match(/^\d+$/)("foobar")).toBeFalsy();
+    }) ;
 });
 
 describe("optionalTypeCheck", () => {
