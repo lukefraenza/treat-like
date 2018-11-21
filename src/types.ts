@@ -5,7 +5,7 @@ export interface Chain<I, C> {
     check: (validator: Validator<C>, message?: string) => Chain<I, C>;
     then: <N>(converter: Converter<C, N>, message?: string) => Chain<I, N>;
 
-    apply(a: I): Promise<C>;
+    apply(value: I): Promise<C>;
 }
 
 export type Input<S> =
@@ -31,7 +31,7 @@ export type Errors<S> =
 export interface OkReport<S> {
     ok: true;
     value: FullOutput<S>;
-    error: undefined;
+    error: Errors<S>;
 }
 
 export interface ErrorReport<S> {
