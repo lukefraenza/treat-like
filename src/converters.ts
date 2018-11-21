@@ -6,5 +6,3 @@ export const trimmed = (value: string): string => value.trim();
 
 export const lowercased = (value: string): string => value.toLowerCase();
 export const uppercased = (value: string): string => value.toUpperCase();
-
-

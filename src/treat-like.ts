@@ -1,38 +1,39 @@
-import {Converter, Input, Pipe, Report, Schema, Validator} from "./types";
+import {all, head, merge} from "ramda";
+import {Chain, Converter, ErrorReport, Input, OkReport, Report, Validator} from "./types";
 
-const pipeChainMethods = <I, C>(f: () => Pipe<I, C>) => ({
-    as: <N>(converter: Converter<C, N>, message?: string): Pipe<I, N> =>
-        continueConvertingPipe(converter, f(), message),
+export const chainMethods = <I, C>(f: () => Chain<I, C>) => ({
+    then: <N>(converter: Converter<C, N>, message?: string): Chain<I, N> =>
+        continueConvertingChain(converter, f(), message),
 
-    mu: (validator: Validator<C>, message?: string): Pipe<I, C> =>
-        continueValidatingPipe(validator, f(), message),
+    check: (validator: Validator<C>, message?: string): Chain<I, C> =>
+        continueValidatingChain(validator, f(), message),
 });
 
-const continueValidatingPipe = <I, C>(
+const continueValidatingChain = <I, C>(
     validator: Validator<C>,
-    prev: Pipe<I, C>,
-    message?: string
+    prev: Chain<I, C>,
+    message?: string,
 ) => {
-    const pipe: Pipe<I, C> = {
-        ap: (x: I) => {
+    const chain: Chain<I, C> = {
+        apply: (x: I) => {
             let prevError: Error | null = null;
 
             return prev
-                .ap(x)
-                .catch(e => {
+                .apply(x)
+                .catch((e) => {
                     throw (prevError = e);
                 })
-                .then(x => {
-                    return Promise.resolve(x)
+                .then((value) => {
+                    return Promise.resolve(value)
                         .then(validator)
-                        .then(valid => {
+                        .then((valid) => {
                             if (valid) {
-                                return x;
+                                return value;
                             } else {
-                                throw new Error(message || "Validation failed")
+                                throw new Error(message || "Validation failed");
                             }
                         })
-                        .catch(e => {
+                        .catch((e) => {
                             if (prevError != null) {
                                 throw prevError;
                             }
@@ -42,24 +43,24 @@ const continueValidatingPipe = <I, C>(
                 });
         },
 
-        ...pipeChainMethods(() => pipe)
+        ...chainMethods(() => chain),
     };
 
-    return pipe;
+    return chain;
 };
 
-const continueConvertingPipe = <I, C, N>(converter: Converter<C, N>, prev: Pipe<I, C>, message?: string) => {
-    const pipe: Pipe<I, N> = {
-        ap: (x: I) => {
+const continueConvertingChain = <I, C, N>(converter: Converter<C, N>, prev: Chain<I, C>, message?: string) => {
+    const chain: Chain<I, N> = {
+        apply: (x: I) => {
             let prevError: Error | null = null;
 
             return prev
-                .ap(x)
-                .catch(e => {
+                .apply(x)
+                .catch((e) => {
                     throw (prevError = e);
                 })
                 .then(converter)
-                .catch(e => {
+                .catch((e) => {
                     if (prevError != null) {
                         throw prevError;
                     }
@@ -68,78 +69,88 @@ const continueConvertingPipe = <I, C, N>(converter: Converter<C, N>, prev: Pipe<
                 });
         },
 
-        ...pipeChainMethods(() => pipe)
+        ...chainMethods(() => chain),
     };
 
-    return pipe;
+    return chain;
 };
 
-export const treat = <I>() => {
-    const pipe: Pipe<I, I> = {
-        ap: (x: I): Promise<I> => Promise.resolve(x),
+const isChain = (obj: any): obj is Chain<any, any> => obj.hasOwnProperty("apply");
 
-        ...pipeChainMethods(() => pipe)
-    };
-
-    return pipe;
-};
-
-const isPipe = (pipe: any): pipe is Pipe<any, any> => pipe.hasOwnProperty("ap");
-const isSchema = (schema: any): schema is Schema => typeof schema == "object" && schema != null;
-const isUndefined = (value: any): value is undefined => value == undefined;
-
-type Entries<T, K extends keyof T> = [K, T[K]][];
-
-const entries = <T extends object>(object: T): Entries<T, keyof T> => {
-    const result: Entries<T, keyof T> = [];
-
-    for (let key in object) {
-        result.push([key, object[key]]);
+export const treatLike = async <S>(schema: S, input: Input<S>): Promise<Report<S>> => {
+    // primitive
+    if (isChain(schema)) {
+        return await schema.apply(input)
+            .then((value) => ({
+                ok: true,
+                value,
+            }) as OkReport<S>)
+            .catch((error) => ({
+                ok: false,
+                error: error.toString(),
+            }) as ErrorReport<S>);
     }
 
-    return result;
-};
+    // List
+    if (Array.isArray(schema) && schema.length === 1) {
+        const subSchema = head(schema);
 
-export const sanitize = <T extends Schema>(schema: T, input: Input<T>): Promise<Report<T>> => {
-    const errors: { [K in keyof T]?: any } = {};
-    const values: { [K in keyof T]?: any } = {};
+        if (Array.isArray(input)) {
+            const subReports = await Promise.all(input.map((subInput) => treatLike(subSchema, subInput)));
 
-    return Promise.all(
-        entries(schema).map(([key, rule]) => {
-            let raw: any = input[key];
+            const ok = all((report) => report.ok, subReports);
 
-            if (isPipe(rule)) {
-                return rule
-                    .ap(raw)
-                    .then(value => {
-                        values[key] = value;
-                    })
-                    .catch(e => {
-                        errors[key as string] = e.message;
-                    });
-            }
+            const value = subReports.map((report) => report.value);
+            const error = subReports.map((report) => report.error);
 
-            if (isSchema(rule)) {
-                if (isUndefined(raw)) {
-                    raw = {}
-                }
+            return {ok, value, error} as any as Report<S>;
+        }
 
-                return sanitize(rule, raw).then(report => {
-                    if (report.ok) {
-                        values[key] = report.values;
-                        errors[key] = {};
-                    } else {
-                        values[key] = report.values;
-                        errors[key] = report.errors;
-                    }
-                });
-            }
-        })
-    ).then(() => {
-        return {
-            ok: Object.keys(errors).length == 0,
-            values,
-            errors
-        } as Report<T>
-    });
+        // TODO: What to do if input is not array?
+    }
+
+    // tuple
+    if (Array.isArray(schema) && schema.length > 1) {
+        if (Array.isArray(input)) {
+            const subReports = await Promise.all(input.map((subInput, i) => treatLike(schema[i], subInput)));
+
+            const ok = all((report) => report.ok, subReports);
+
+            const value = subReports.map((report) => report.value);
+            const error = subReports.map((report) => report.error);
+
+            return {ok, value, error} as any as Report<S>;
+        }
+
+        // TODO: What to do if input is not array?
+    }
+
+    // dict
+    if (typeof schema === "object" && schema !== null) {
+        if (typeof input === "object" && input !== null) {
+
+            const keys = Object.keys(schema) as Array<keyof typeof schema>;
+
+            const subReports = await Promise.all(
+                keys.map(async (key) => {
+                    const subSchema = schema[key];
+                    const subInput = (input as typeof schema)[key];
+
+                    const report = await treatLike(subSchema, subInput as Input<typeof subSchema>);
+
+                    return {key, report};
+                }),
+            );
+
+            const ok = all((item) => item.report.ok, subReports);
+            const value = subReports.map((item) => ({[item.key]: item.report.value})).reduce(merge);
+            const error = subReports.map((item) => ({[item.key]: item.report.error})).reduce(merge);
+
+            return {ok, value, error} as any as Report<S>;
+        }
+
+        // TODO: What to do if input is not object?
+    }
+
+    return {ok: false, error: "not suitable", value: undefined} as ErrorReport<S>;
 };

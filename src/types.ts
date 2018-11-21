@@ -1,49 +1,43 @@
 export type Converter<A, B> = (a: A) => B | Promise<B>;
 export type Validator<A> = (a: A) => boolean | Promise<boolean>;
 
-export interface Pipe<I, C> {
-    mu: (validator: Validator<C>, message?: string) => Pipe<I, C>;
-    as: <N>(converter: Converter<C, N>, message?: string) => Pipe<I, N>;
+export interface Chain<I, C> {
+    check: (validator: Validator<C>, message?: string) => Chain<I, C>;
+    then: <N>(converter: Converter<C, N>, message?: string) => Chain<I, N>;
 
-    ap(a: I): Promise<C>;
+    apply(a: I): Promise<C>;
 }
 
+export type Input<S> =
+    S extends Chain<infer I, any> ? I :
+        S extends { [K: string]: any } ? { [K in keyof S]: Input<S[K]> } :
+            S;
 
+export type FullOutput<S> =
+    S extends Chain<any, infer C> ? C :
+        S extends { [K: string]: any } ? { [K in keyof S]: Input<S[K]> } :
+            S;
 
+export type PartialOutput<S> =
+    S extends Chain<any, infer C> ? C | undefined :
+        S extends { [K: string]: any } ? { [K in keyof S]: Input<S[K]> } :
+            S;
 
-export interface Schema {
-    [name: string]: Pipe<any, any> | Schema;
-}
+export type Errors<S> =
+    S extends Chain<any, any> ? string | undefined :
+        S extends { [K: string]: any } ? { [K in keyof S]: Errors<S[K]> } :
+            string | undefined;
 
-export type Input<T extends Schema> = {
-    [K in keyof T]?: T[K] extends Pipe<infer I, any> ? I : T[K] extends Schema ? Input<T[K]> : never
-};
-
-export type FullOutput<T extends Schema> = {
-    [K in keyof T]: T[K] extends Pipe<infer I, infer C> ? C : T[K] extends Schema ? FullOutput<T[K]> : never
-};
-
-export type PartialOutput<T extends Schema> = {
-    [K in keyof T]: T[K] extends Pipe<infer I, infer C>
-        ? C | undefined
-        : T[K] extends Schema ? PartialOutput<T[K]> : never
-};
-
-export type Errors<T extends Schema> = {
-    [K in keyof T]: T[K] extends Pipe<infer I, infer C>
-        ? string | undefined
-        : T[K] extends Schema ? Errors<T[K]> : never
-};
-
-export interface OkReport<T extends Schema> {
+export interface OkReport<S> {
     ok: true;
-    values: FullOutput<T>;
+    value: FullOutput<S>;
+    error: undefined;
 }
 
-export interface ErrorReport<T extends Schema> {
+export interface ErrorReport<S> {
     ok: false;
-    errors: Errors<T>;
-    values: PartialOutput<T>;
+    error?: Errors<S>;
+    value?: PartialOutput<S>;
 }
 
-export type Report<T extends Schema> = OkReport<T> | ErrorReport<T>;
+export type Report<S> = OkReport<S> | ErrorReport<S>;
