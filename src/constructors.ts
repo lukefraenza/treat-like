@@ -9,13 +9,13 @@ import {optionalTypeCheck} from "./validators";
  * @returns {Chain}
  */
 export const createChain = <I>() => {
-    const pipe: Chain<I, I> = {
+    const chain: Chain<I, I> = {
         apply: (x: I): Promise<I> => Promise.resolve(x),
 
-        ...chainMethods(() => pipe),
+        ...chainMethods(() => chain),
     };
 
-    return pipe;
+    return chain;
 };
 
 /**
