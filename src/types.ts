@@ -13,23 +13,23 @@ export interface Chain<I, C> {
 
 export type Input<S> =
     S extends Chain<infer I, any> ? I | undefined :
-        S extends { [K: string]: any } ? { [K in keyof S]?: Input<S[K]> } :
-            S | undefined;
+    S extends { [K: string]: any } ? { [K in keyof S]?: Input<S[K]> } :
+    S | undefined;
 
 export type FullOutput<S> =
     S extends Chain<any, infer C> ? C :
-        S extends { [K: string]: any } ? { [K in keyof S]: Input<S[K]> } :
-            S;
+    S extends { [K: string]: any } ? { [K in keyof S]: FullOutput<S[K]> } :
+    S;
 
 export type PartialOutput<S> =
     S extends Chain<any, infer C> ? C | undefined :
-        S extends { [K: string]: any } ? { [K in keyof S]: Input<S[K]> } :
-            S;
+    S extends { [K: string]: any } ? { [K in keyof S]: PartialOutput<S[K]> } :
+    S;
 
 export type Errors<S> =
     S extends Chain<any, any> ? string | undefined :
-        S extends { [K: string]: any } ? { [K in keyof S]: Errors<S[K]> } :
-            string | undefined;
+    S extends { [K: string]: any } ? { [K in keyof S]: Errors<S[K]> } :
+    string | undefined;
 
 export interface OkReport<S> {
     ok: true;
