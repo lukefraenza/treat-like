@@ -5,7 +5,6 @@ export type Optional<T> = T | undefined | null;
 export type Provided<O> = O extends Optional<infer T> ? T : O;
 
 export interface Chain<I, C> {
-    check: (validator: Validator<C>, message?: string) => Chain<I, C>;
     then: <N>(converter: Converter<C, N>, message?: string) => Chain<I, N>;
 
     apply(value: I): Promise<C>;

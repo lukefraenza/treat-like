@@ -3,53 +3,10 @@ import {Chain, Converter, ErrorReport, Input, OkReport, Report, Validator} from 
 
 export const chainMethods = <I, C>(f: () => Chain<I, C>) => ({
     then: <N>(converter: Converter<C, N>, message?: string): Chain<I, N> =>
-        continueConvertingChain(converter, f(), message),
-
-    check: (validator: Validator<C>, message?: string): Chain<I, C> =>
-        continueValidatingChain(validator, f(), message),
+        continueChain(converter, f(), message),
 });
 
-const continueValidatingChain = <I, C>(
-    validator: Validator<C>,
-    prev: Chain<I, C>,
-    message?: string,
-) => {
-    const chain: Chain<I, C> = {
-        apply: (x: I) => {
-            let prevError: Error | null = null;
-
-            return prev
-                .apply(x)
-                .catch((e) => {
-                    throw (prevError = e);
-                })
-                .then((value) => {
-                    return Promise.resolve(value)
-                        .then(validator)
-                        .then((valid) => {
-                            if (valid) {
-                                return value;
-                            } else {
-                                throw new Error(message || "Validation failed");
-                            }
-                        })
-                        .catch((e) => {
-                            if (prevError != null) {
-                                throw prevError;
-                            }
-
-                            throw message ? new Error(message) : new Error("Validation Error");
-                        });
-                });
-        },
-
-        ...chainMethods(() => chain),
-    };
-
-    return chain;
-};
-
-const continueConvertingChain = <I, C, N>(converter: Converter<C, N>, prev: Chain<I, C>, message?: string) => {
+const continueChain = <I, C, N>(converter: Converter<C, N>, prev: Chain<I, C>, message?: string) => {
     const chain: Chain<I, N> = {
         apply: (x: I) => {
             let prevError: Error | null = null;
