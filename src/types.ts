@@ -6,21 +6,21 @@ export interface Chain<I, O> {
     apply(value: I): O;
 }
 
-export type Input<T> = T extends Chain<infer I, any> ? I : never;
-export type Output<T> = T extends Chain<any, infer O> ? O : never;
+export type ChainInput<T> = T extends Chain<infer I, any> ? I : never;
+export type ChainOutput<T> = T extends Chain<any, infer O> ? O : never;
 
 export type FailMessage = string | undefined;
 
-export interface OkReport<T> {
+export interface SuccessReport<T> {
     ok: true;
     error: undefined;
-    value: Output<T>;
+    value: ChainOutput<T>;
 }
 
-export interface ErrorReport<T> {
+export interface FailReport<T> {
     ok: false;
     error: FailMessage;
-    value: undefined
+    value: undefined;
 }
 
-export type Report<T> = OkReport<T> | ErrorReport<T>;
+export type Report<T> = SuccessReport<T> | FailReport<T>;

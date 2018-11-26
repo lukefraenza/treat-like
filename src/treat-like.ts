@@ -1,4 +1,4 @@
-import {Chain, Converter, ErrorReport, Input, OkReport, Report} from "./types";
+import {Chain, ChainInput, Converter, FailReport, Report, SuccessReport} from "./types";
 
 export const chainMethods = <I, O>(f: () => Chain<I, O>) => ({
     then: <N>(converter: Converter<O, N>, message?: string): Chain<I, N> =>
@@ -23,11 +23,11 @@ const continueChain = <I, O, N>(converter: Converter<O, N>, prev: Chain<I, O>, m
     return chain;
 };
 
-export const treatLike = <C extends Chain<any, any>>(chain: C, input: Input<C>): Report<C> => {
+export const treatLike = <C extends Chain<any, any>>(chain: C, input: ChainInput<C>): Report<C> => {
     try {
         const value = chain.apply(input);
-        return {ok: true, error: undefined, value} as OkReport<C>;
+        return {ok: true, error: undefined, value} as SuccessReport<C>;
     } catch (e) {
-        return {ok: false, error: e.message, value: undefined} as ErrorReport<C>;
+        return {ok: false, error: e.message, value: undefined} as FailReport<C>;
     }
 };

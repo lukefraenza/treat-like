@@ -2,7 +2,7 @@ import {all} from "ramda";
 import {createChain} from "./constructors";
 import {optional} from "./misc";
 import {treatLike} from "./treat-like";
-import {Chain, OkReport} from "./types";
+import {Chain} from "./types";
 
 const tuple = <T extends any[]>(...args: T) => args;
 
