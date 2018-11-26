@@ -2,12 +2,12 @@ import {all} from "ramda";
 import {createChain} from "./constructors";
 import {optional} from "./misc";
 import {treatLike} from "./treat-like";
-import {Chain, Validator} from "./types";
+import {Chain, OkReport} from "./types";
 
 const tuple = <T extends any[]>(...args: T) => args;
 
 // experiment constructors
-const createValidator = <A>(f: Validator<A>) =>
+const createValidator = <A>(f: (value: A) => boolean) =>
     (value: A) => {
         if (f(value)) {
             return value;
@@ -29,15 +29,12 @@ const asList = <I, C>(chain: Chain<I, C>) =>
     (value: I[]): C[] => {
         const reports = value.map((item) => treatLike(chain, item));
 
-        const results = reports.map((r) => r.value);
-        const errors = reports.map((r) => r.error);
-
         if (all((r) => r.ok, reports)) {
             // all ok
-            return results as C[];
+            return reports.map((r) => r.value) as C[];
         } else {
             // at least one item has error
-            return results as C[];
+            throw new Error("As list error");
         }
     };
 
@@ -159,7 +156,7 @@ describe("list fields validation and transformation", () => {
                     .then(onlyString, "err_not_string")
                     .then(onlyLonger(1), "err_too_short")
                     .then((x) => x.toUpperCase()),
-            ))
+            ), "err_item_error")
         ;
 
         test("ok list", () => {
@@ -197,24 +194,24 @@ describe("list fields validation and transformation", () => {
         test("undefined list item", () => {
             const report = treatLike(requiredStringList, ["Hello", undefined, "World"]);
 
-            expect(report.error).toBe([undefined, "err_required_2", undefined]);
-            expect(report.value).toEqual(["HELLO", undefined, "WORLD"]);
+            expect(report.error).toBe("err_item_error");
+            expect(report.value).toEqual(undefined);
             expect(report.ok).toBeFalsy();
         });
 
         test("wrong list item type", () => {
             const report = treatLike(requiredStringList, ["Hello", 12, "World"]);
 
-            expect(report.error).toBe([undefined, "err_not_string", undefined]);
-            expect(report.value).toEqual(["HELLO", undefined, "WORLD"]);
+            expect(report.error).toBe("err_item_error");
+            expect(report.value).toEqual(undefined);
             expect(report.ok).toBeFalsy();
         });
 
         test("wrong list item", () => {
             const report = treatLike(requiredStringList, ["Hello", "World", "!"]);
 
-            expect(report.error).toBe([undefined, undefined, "err_too_short"]);
-            expect(report.value).toEqual(["HELLO", "WORLD", undefined]);
+            expect(report.error).toBe("err_item_error");
+            expect(report.value).toEqual(undefined);
             expect(report.ok).toBeFalsy();
         });
 

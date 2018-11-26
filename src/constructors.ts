@@ -1,6 +1,5 @@
 import {chainMethods} from "./treat-like";
 import {Chain} from "./types";
-import {optionalTypeCheck} from "./validators";
 
 /**
  * General chain creating function.

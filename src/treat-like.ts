@@ -1,11 +1,11 @@
 import {Chain, Converter, ErrorReport, Input, OkReport, Report} from "./types";
 
-export const chainMethods = <I, C>(f: () => Chain<I, C>) => ({
-    then: <N>(converter: Converter<C, N>, message?: string): Chain<I, N> =>
+export const chainMethods = <I, O>(f: () => Chain<I, O>) => ({
+    then: <N>(converter: Converter<O, N>, message?: string): Chain<I, N> =>
         continueChain(converter, f(), message),
 });
 
-const continueChain = <I, C, N>(converter: Converter<C, N>, prev: Chain<I, C>, message?: string) => {
+const continueChain = <I, O, N>(converter: Converter<O, N>, prev: Chain<I, O>, message?: string) => {
     const chain: Chain<I, N> = {
         apply: (x: I) => {
             const prevResult = prev.apply(x);

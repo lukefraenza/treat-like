@@ -1,33 +1,26 @@
 export type Converter<A, B> = (a: A) => B;
-export type Validator<A> = (a: A) => boolean;
 
-export interface Chain<I, C> {
-    then: <N>(converter: Converter<C, N>, message?: string) => Chain<I, N>;
+export interface Chain<I, O> {
+    then: <N>(converter: Converter<O, N>, message?: string) => Chain<I, N>;
 
-    apply(value: I): C;
+    apply(value: I): O;
 }
 
-export type Input<S> = S extends Chain<infer I, any> ? I : never;
+export type Input<T> = T extends Chain<infer I, any> ? I : never;
+export type Output<T> = T extends Chain<any, infer O> ? O : never;
 
-export type FullOutput<S> =
-    S extends Chain<any, infer O> ? O : never;
+export type FailMessage = string | undefined;
 
-export type PartialOutput<S> =
-    S extends Chain<any, infer C> ? C | undefined : never;
-
-export type Errors<S> =
-    S extends Chain<any, any> ? string | undefined : never;
-
-export interface OkReport<S> {
+export interface OkReport<T> {
     ok: true;
-    value: FullOutput<S>;
-    error: Errors<S>;
+    error: undefined;
+    value: Output<T>;
 }
 
-export interface ErrorReport<S> {
+export interface ErrorReport<T> {
     ok: false;
-    error?: Errors<S>;
-    value?: PartialOutput<S>;
+    error: FailMessage;
+    value: undefined
 }
 
-export type Report<S> = OkReport<S> | ErrorReport<S>;
+export type Report<T> = OkReport<T> | ErrorReport<T>;
