@@ -1,3 +1,4 @@
+import {all} from "ramda";
 import {createChain} from "./constructors";
 import {optional} from "./misc";
 import {treatLike} from "./treat-like";
@@ -26,7 +27,18 @@ const createTypeValidator = <I, O>(f: (value: I | O) => value is O) =>
 
 const asList = <I, C>(chain: Chain<I, C>) =>
     (value: I[]): C[] => {
-        return value.map(chain.apply);
+        const reports = value.map((item) => treatLike(chain, item));
+
+        const results = reports.map((r) => r.value);
+        const errors = reports.map((r) => r.error);
+
+        if (all((r) => r.ok, reports)) {
+            // all ok
+            return results as C[];
+        } else {
+            // at least one item has error
+            return results as C[];
+        }
     };
 
 // type predicates
@@ -55,80 +67,157 @@ describe("simple fields validation and transformation", () => {
         const requiredStringField = createChain()
             .then(onlyProvided, "err_required")
             .then(onlyString, "err_not_string")
-            .then(onlyLonger(1), "err_too_short")
             .then((x) => x.trim())
+            .then(onlyLonger(1), "err_too_short")
         ;
 
         test("ok value", () => {
             const report = treatLike(requiredStringField, "Hello ");
 
-            expect(report.ok).toBeTruthy();
-            expect(report.value).toBe("Hello");
             expect(report.error).toBeUndefined();
+            expect(report.value).toBe("Hello");
+            expect(report.ok).toBeTruthy();
         });
 
         test("undefined value", () => {
             const report = treatLike(requiredStringField, undefined);
 
-            expect(report.ok).toBeFalsy();
-            expect(report.value).toBeUndefined();
             expect(report.error).toBe("err_required");
+            expect(report.value).toBeUndefined();
+            expect(report.ok).toBeFalsy();
         });
 
         test("wrong value type", () => {
             const report = treatLike(requiredStringField, 45);
 
-            expect(report.ok).toBeFalsy();
-            expect(report.value).toBeUndefined();
             expect(report.error).toBe("err_not_string");
+            expect(report.value).toBeUndefined();
+            expect(report.ok).toBeFalsy();
         });
 
         test("wrong value", () => {
             const report = treatLike(requiredStringField, "M");
 
-            expect(report.ok).toBeFalsy();
-            expect(report.value).toBeUndefined();
             expect(report.error).toBe("err_too_short");
+            expect(report.value).toBeUndefined();
+            expect(report.ok).toBeFalsy();
         });
     });
 
     describe("optional", () => {
         const optionalStringField = createChain()
             .then(optional(onlyString), "err_not_string")
-            .then(optional(onlyLonger(1)), "err_too_short")
             .then(optional((x) => x.trim()))
+            .then(optional(onlyLonger(1)), "err_too_short")
         ;
 
         test("ok value", () => {
             const report = treatLike(optionalStringField, "Hello ");
 
-            expect(report.ok).toBeTruthy();
-            expect(report.value).toBe("Hello");
             expect(report.error).toBeUndefined();
+            expect(report.value).toBe("Hello");
+            expect(report.ok).toBeTruthy();
         });
 
         test("undefined value", () => {
             const report = treatLike(optionalStringField, undefined);
 
-            expect(report.ok).toBeTruthy();
-            expect(report.value).toBeUndefined();
             expect(report.error).toBeUndefined();
+            expect(report.value).toBeUndefined();
+            expect(report.ok).toBeTruthy();
         });
 
         test("wrong value type", () => {
             const report = treatLike(optionalStringField, 45);
 
-            expect(report.ok).toBeFalsy();
-            expect(report.value).toBeUndefined();
             expect(report.error).toBe("err_not_string");
+            expect(report.value).toBeUndefined();
+            expect(report.ok).toBeFalsy();
         });
 
         test("wrong value", () => {
             const report = treatLike(optionalStringField, "M");
 
-            expect(report.ok).toBeFalsy();
-            expect(report.value).toBeUndefined();
             expect(report.error).toBe("err_too_short");
+            expect(report.value).toBeUndefined();
+            expect(report.ok).toBeFalsy();
         });
     });
+});
+
+describe("list fields validation and transformation", () => {
+
+    describe("required field with required items", () => {
+
+        const requiredStringList = createChain()
+            .then(onlyProvided, "err_required_1")
+            .then(onlyList, "err_not_list")
+            .then(onlyNotEmpty, "err_empty")
+            .then(asList(
+                createChain()
+                    .then(onlyProvided, "err_required_2")
+                    .then(onlyString, "err_not_string")
+                    .then(onlyLonger(1), "err_too_short")
+                    .then((x) => x.toUpperCase()),
+            ))
+        ;
+
+        test("ok list", () => {
+            const report = treatLike(requiredStringList, ["Hello", "World"]);
+
+            expect(report.error).toBe(undefined);
+            expect(report.value).toEqual(["HELLO", "WORLD"]);
+            expect(report.ok).toBeTruthy();
+        });
+
+        test("undefined list", () => {
+            const report = treatLike(requiredStringList, undefined);
+
+            expect(report.error).toBe("err_required_1");
+            expect(report.value).toEqual(undefined);
+            expect(report.ok).toBeFalsy();
+        });
+
+        test("not list", () => {
+            const report = treatLike(requiredStringList, "hello");
+
+            expect(report.error).toBe("err_not_list");
+            expect(report.value).toEqual(undefined);
+            expect(report.ok).toBeFalsy();
+        });
+
+        test("wrong list", () => {
+            const report = treatLike(requiredStringList, []);
+
+            expect(report.error).toBe("err_empty");
+            expect(report.value).toEqual(undefined);
+            expect(report.ok).toBeFalsy();
+        });
+
+        test("undefined list item", () => {
+            const report = treatLike(requiredStringList, ["Hello", undefined, "World"]);
+
+            expect(report.error).toBe([undefined, "err_required_2", undefined]);
+            expect(report.value).toEqual(["HELLO", undefined, "WORLD"]);
+            expect(report.ok).toBeFalsy();
+        });
+
+        test("wrong list item type", () => {
+            const report = treatLike(requiredStringList, ["Hello", 12, "World"]);
+
+            expect(report.error).toBe([undefined, "err_not_string", undefined]);
+            expect(report.value).toEqual(["HELLO", undefined, "WORLD"]);
+            expect(report.ok).toBeFalsy();
+        });
+
+        test("wrong list item", () => {
+            const report = treatLike(requiredStringList, ["Hello", "World", "!"]);
+
+            expect(report.error).toBe([undefined, undefined, "err_too_short"]);
+            expect(report.value).toEqual(["HELLO", "WORLD", undefined]);
+            expect(report.ok).toBeFalsy();
+        });
+
+    });
+
 });
