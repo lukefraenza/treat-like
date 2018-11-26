@@ -1,34 +1,22 @@
-export type Converter<A, B> = (a: A) => B | Promise<B>;
-export type Validator<A> = (a: A) => boolean | Promise<boolean>;
-
-export type Optional<T> = T | undefined | null;
-export type Provided<O> = O extends Optional<infer T> ? T : O;
+export type Converter<A, B> = (a: A) => B;
+export type Validator<A> = (a: A) => boolean;
 
 export interface Chain<I, C> {
     then: <N>(converter: Converter<C, N>, message?: string) => Chain<I, N>;
 
-    apply(value: I): Promise<C>;
+    apply(value: I): C;
 }
 
-export type Input<S> =
-    S extends Chain<infer I, any> ? I | undefined :
-    S extends { [K: string]: any } ? { [K in keyof S]?: Input<S[K]> } :
-    S | undefined;
+export type Input<S> = S extends Chain<infer I, any> ? I : never;
 
 export type FullOutput<S> =
-    S extends Chain<any, infer C> ? C :
-    S extends { [K: string]: any } ? { [K in keyof S]: FullOutput<S[K]> } :
-    S;
+    S extends Chain<any, infer O> ? O : never;
 
 export type PartialOutput<S> =
-    S extends Chain<any, infer C> ? C | undefined :
-    S extends { [K: string]: any } ? { [K in keyof S]: PartialOutput<S[K]> } :
-    S;
+    S extends Chain<any, infer C> ? C | undefined : never;
 
 export type Errors<S> =
-    S extends Chain<any, any> ? string | undefined :
-    S extends { [K: string]: any } ? { [K in keyof S]: Errors<S[K]> } :
-    string | undefined;
+    S extends Chain<any, any> ? string | undefined : never;
 
 export interface OkReport<S> {
     ok: true;

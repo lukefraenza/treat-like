@@ -1,8 +1,8 @@
-import {concat} from "ramda";
+import {concat, reverse} from "ramda";
 import {createChain} from "./constructors";
 import {optional} from "./misc";
 import {treatLike} from "./treat-like";
-import {FullOutput, Input, Validator} from "./types";
+import {Chain, FullOutput, Input, Validator} from "./types";
 
 const tuple = <T extends any[]>(...args: T) => args;
 
@@ -34,16 +34,10 @@ const createTypeValidator = <I, O>(f: (value: I | O) => value is O) =>
         }
     };
 
-const fromSchema = <S>(schema: S) =>
-    (value: Input<S>): Promise<FullOutput<S>> => {
-        return treatLike(schema, value)
-            .then((report) => {
-                if (report.ok) {
-                    return report.value;
-                } else {
-                    throw new Error("converting error");
-                }
-            });
+const asList = <I, C>(chain: Chain<I, C>) =>
+    (value: I[]): C[] => {
+        // return value.map(chain.apply);
+        throw new Error("Not implemented");
     };
 
 // type predicates
@@ -51,22 +45,18 @@ const isDefined = <A>(value: unknown): value is {} => (value !== undefined && va
 const isString = (value: unknown): value is string => typeof value === "string";
 const isList = (value: unknown): value is Array<unknown> => Array.isArray(value);
 
-
 // value predicates
 const longer = <T extends string | any[]>(then: number) => (value: T) => value.length > then;
 const notEmpty = longer(0);
-
 
 // type validators
 const onlyProvided = createTypeValidator(isDefined);
 const onlyString = createTypeValidator(isString);
 const onlyList = createTypeValidator(isList);
 
-
 // value validators
 const onlyNotEmpty = <T extends string | any[]>(v: T) => createValidator<T>(notEmpty)(v);
 const onlyLonger = (then: number) => <T extends string | any[]>(value: T) => createValidator<T>(longer(then))(value);
-
 
 // shortcuts
 const optionalStringField = createChain()
@@ -82,6 +72,15 @@ const requiredStringField = createChain()
     .then((x) => x.trim())
 ;
 
+const reversed = createChain()
+    .then(onlyProvided, "err_required")
+    .then(onlyString, "err_not_string")
+    .then(reverse)
+;
+
+// misc
+
+const x = optional(asList(reversed));
 
 // examples
 const fieldExamples: Example[] = [
@@ -168,14 +167,14 @@ const listExamples: Example[] = [
     //             .then(onlyProvided, "err_required")
     //             .then(onlyList, "err_not_list")
     //             .then(onlyNotEmpty)
-    //             .then(reverseEachElementInList_required)
+    //             .then(asList(reversed))
     //     ),
     //
     //     input: ["Hello", "World"],
     //     output: ["olleH", "dlroW"],
     //     error: undefined,
     // },
-
+    //
     // {
     //     note: "undefined -> optional not empty list",
     //     ok: true,
@@ -183,14 +182,14 @@ const listExamples: Example[] = [
     //         createChain()
     //             .then(optional(onlyList), "err_not_list")
     //             .then(optional(onlyNotEmpty))
-    //             .then(optional(reverseEachElementInList_optional))
+    //             .then(optional(asList(reversed)))
     //     ),
     //
     //     input: undefined,
     //     output: undefined,
     //     error: undefined,
     // },
-    //
+
     // {
     //     note: "ok -> optional not empty list",
     //     ok: true,
@@ -224,25 +223,24 @@ const examples: Example[] = [
     otherExamples,
 ].reduce(concat, []);
 
-
 // tests
 describe("sets ok status as expected", () => {
-    examples.map((e) => test(e.note, async () => {
-        const report = await treatLike(e.schema, e.input);
+    examples.map((e) => test(e.note, () => {
+        const report = treatLike(e.schema, e.input);
         expect(report.ok).toEqual(e.ok);
     }));
 });
 
 describe("sets error messages as expected", () => {
-    examples.map((e) => test(e.note, async () => {
-        const report = await treatLike(e.schema, e.input);
+    examples.map((e) => test(e.note, () => {
+        const report = treatLike(e.schema, e.input);
         expect(report.error).toEqual(e.error);
     }));
 });
 
 describe("sets out values as expected", () => {
-    examples.map((e) => test(e.note, async () => {
-        const report = await treatLike(e.schema, e.input);
+    examples.map((e) => test(e.note, () => {
+        const report = treatLike(e.schema, e.input);
         expect(report.value).toEqual(e.output);
     }));
 });

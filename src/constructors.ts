@@ -10,7 +10,7 @@ import {optionalTypeCheck} from "./validators";
  */
 export const createChain = () => {
     const chain: Chain<unknown, unknown> = {
-        apply: (x: unknown): Promise<unknown> => Promise.resolve(x),
+        apply: (x: unknown): unknown => x,
 
         ...chainMethods(() => chain),
     };
