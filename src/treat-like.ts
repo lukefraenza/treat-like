@@ -1,27 +1,26 @@
 import {Chain, ChainInput, Converter, FailReport, Report, SuccessReport} from "./types";
 
-export const chainMethods = <I, O>(f: () => Chain<I, O>) => ({
-    then: <N>(converter: Converter<O, N>, message?: string): Chain<I, N> =>
-        continueChain(converter, f(), message),
+export const chainMethods = <I, O>(getChain: () => Chain<I, O>) => ({
+
+    then: <N>(converter: Converter<O, N>, message?: string): Chain<I, N> => {
+        const chain: Chain<I, N> = {
+            apply: (x: I) => {
+                const prevResult = getChain().apply(x);
+
+                try {
+                    return converter(prevResult);
+                } catch (e) {
+                    throw message ? new Error(message) : new Error("Converting error");
+                }
+            },
+
+            ...chainMethods(() => chain),
+        };
+
+        return chain;
+    },
+
 });
-
-const continueChain = <I, O, N>(converter: Converter<O, N>, prev: Chain<I, O>, message?: string) => {
-    const chain: Chain<I, N> = {
-        apply: (x: I) => {
-            const prevResult = prev.apply(x);
-
-            try {
-                return converter(prevResult);
-            } catch (e) {
-                throw message ? new Error(message) : new Error("Converting error");
-            }
-        },
-
-        ...chainMethods(() => chain),
-    };
-
-    return chain;
-};
 
 export const treatLike = <C extends Chain<any, any>>(chain: C, input: ChainInput<C>): Report<C> => {
     try {
