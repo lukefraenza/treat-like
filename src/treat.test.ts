@@ -1,5 +1,5 @@
 import {treat} from "./treat";
-import {id} from "./steps";
+import {asDate, continueWith, id} from "./steps";
 
 describe("chain", () => {
 
@@ -79,7 +79,39 @@ describe("chain", () => {
                 expect(report).not.toHaveProperty("error");
             });
 
-        })
+        });
+
+
+        describe("three converting steps", () => {
+            const c = chain.then(asDate).then(x => continueWith(x.getDay())).then(x => continueWith(x * 2));
+
+            const input = (new Date().toString());
+            const expected = new Date(input).getDay() * 2;
+
+            test("does not throw error", () => {
+                expect(() => c.apply(input)).not.toThrow();
+            });
+
+            test("has ok state", () => {
+                const report = c.apply(input);
+
+                expect(report.ok).toBeTruthy();
+            });
+
+            test("has expected output", () => {
+                const report = c.apply(input);
+
+                report.ok && expect(report.value).toBe(expected);
+            });
+
+            test("has no error field", () => {
+                const report = c.apply(input);
+
+                expect(report).not.toHaveProperty("error");
+            });
+
+        });
+
     });
 
 

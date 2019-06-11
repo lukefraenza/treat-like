@@ -1,7 +1,14 @@
 // Chain report types
-export interface ChainOkReport<ChainContinueOutput, ChainStopOutput> {
+export interface ChainContinueReport<ChainContinueOutput> {
     ok: true;
-    value: ChainContinueOutput | ChainStopOutput;
+    stop: false;
+    value: ChainContinueOutput;
+}
+
+export interface ChainStopReport<ChainStopOutput> {
+    ok: true;
+    stop: true;
+    value: ChainStopOutput;
 }
 
 export interface ChainErrorReport<ChainError> {
@@ -9,7 +16,7 @@ export interface ChainErrorReport<ChainError> {
     error: ChainError;
 }
 
-export type ChainReport<ChainContinueOutput, ChainStopOutput, ChainError> = ChainOkReport<ChainContinueOutput, ChainStopOutput> | ChainErrorReport<ChainError>;
+export type ChainReport<ChainContinueOutput, ChainStopOutput, ChainError> = ChainContinueReport<ChainContinueOutput> | ChainStopReport<ChainStopOutput> | ChainErrorReport<ChainError>;
 
 
 // Step reports types

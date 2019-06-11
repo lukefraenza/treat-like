@@ -1,7 +1,7 @@
 import {Step, StepContinueResult, StepErrorResult, StepResult, StepStopResult} from "./types";
 
 /**
- * Creates normal step result from provided value
+ * Creates continue step result from provided value
  * @param value
  */
 export const continueWith = <Output>(value: Output): StepContinueResult<Output> => ({
@@ -56,6 +56,7 @@ export const id = continueWith;
 export const asString = createConvertingStep(String);
 export const asInteger = createConvertingStep(parseInt);
 export const asFloat = createConvertingStep(parseFloat);
+export const asDate = createConvertingStep((str: string) => new Date(str));
 export const rounded = createConvertingStep(Math.round);
 
 // Simple preset validators
