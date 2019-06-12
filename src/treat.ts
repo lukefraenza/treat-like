@@ -6,18 +6,18 @@ type ApplyFunction<ChainInput, ChainContinueOutput, ChainStopOutput, ChainError>
  * Creates continue chain report from provided value
  * @param value
  */
-const continueWith = <T>(value: T): ChainContinueReport<T> => ({ok: true, stop: false, value});
+export const continueReport = <T>(value: T): ChainContinueReport<T> => ({ok: true, stop: false, value});
 
 /**
  * Crates stop chain report from provided value
  * @param value
  */
-const stopWith = <T>(value: T): ChainStopReport<T> => ({ok: true, stop: true, value});
+export const stopReport = <T>(value: T): ChainStopReport<T> => ({ok: true, stop: true, value});
 
 /**
  * Creates error chain report from provided error
  */
-const errorWith = <T = undefined>(error: T): ChainErrorReport<T> => ({ok: false, error});
+export const errorReport = <T = undefined>(error?: T): ChainErrorReport<T> => ({ok: false, error});
 
 
 /**
@@ -35,28 +35,33 @@ function continueChain<ChainInput, ChainContinueOutput, ChainStopOutput, ChainEr
 
     const apply = (value: ChainInput): ChainReport<StepContinueOutput, ChainStopOutput | StepStopOutput, ChainError | StepError> => {
 
-        const prevReport = prevApply(value);
+        try {
+            const prevReport = prevApply(value);
 
-        if (!prevReport.ok) {
-            return prevReport;
+            if (!prevReport.ok) {
+                return prevReport;
+            }
+
+            if (prevReport.stop) {
+                return prevReport
+            }
+
+            const stepInput = prevReport.value;
+            const stepReport = step(stepInput);
+
+            if (!stepReport.ok) {
+                return errorReport(error as any); // TODO: Fix this
+            }
+
+            if (stepReport.stop) {
+                return stopReport(stepReport.value);
+            }
+
+            return continueReport(stepReport.value);
+
+        } catch (e) {
+            return errorReport(error);
         }
-
-        if (prevReport.stop) {
-            return prevReport
-        }
-
-        const stepInput = prevReport.value;
-        const stepReport = step(stepInput);
-
-        if (!stepReport.ok) {
-            return errorWith(error as any); // TODO: Fix this
-        }
-
-        if (stepReport.stop) {
-            return stopWith(stepReport.value);
-        }
-
-        return continueWith(stepReport.value);
     };
 
     const then = <NextStepContinueOutput, NextStepStopOutput, NextStepError>(step: Step<StepContinueOutput, NextStepContinueOutput, NextStepStopOutput>, error?: NextStepError): Chain<ChainInput, NextStepContinueOutput, ChainStopOutput | StepStopOutput | NextStepStopOutput, ChainError | StepError | NextStepError> => {
@@ -76,7 +81,7 @@ function continueChain<ChainInput, ChainContinueOutput, ChainStopOutput, ChainEr
 export function treat() {
     return Object.freeze({
         then<ChainInput, ChainContinueOutput, ChainStopOutput = never, ChainError = never>(step: Step<ChainInput, ChainContinueOutput, ChainStopOutput>, error?: ChainError): Chain<ChainInput, ChainContinueOutput, ChainStopOutput, ChainError> {
-            return continueChain(continueWith, step, error);
+            return continueChain(continueReport, step, error);
         }
     });
 }

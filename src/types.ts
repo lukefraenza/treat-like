@@ -13,7 +13,7 @@ export interface ChainStopReport<ChainStopOutput> {
 
 export interface ChainErrorReport<ChainError> {
     ok: false;
-    error: ChainError;
+    error?: ChainError;
 }
 
 export type ChainReport<ChainContinueOutput, ChainStopOutput, ChainError> = ChainContinueReport<ChainContinueOutput> | ChainStopReport<ChainStopOutput> | ChainErrorReport<ChainError>;

@@ -1,7 +1,70 @@
-import {treat} from "./treat";
-import {asDate, continueWith, id, isString} from "./steps";
+import {continueReport, errorReport, stopReport, treat} from "./treat";
+import {asDate, asInteger, asString, continueWith, id, isString, stopWith} from "./steps";
+import {Chain, ChainReport} from "./types";
+
 
 describe("chain", () => {
+
+    const createChainTests = (chain: Chain<any, any, any, any>, input: any, expectedReport: ChainReport<any, any, any>) => {
+
+        test("does not throw error", () => {
+            expect(() => chain.apply(input)).not.toThrow();
+        });
+
+        if (expectedReport.ok) {
+
+            test("has ok state", () => {
+                const report = chain.apply(input);
+
+                expect(report.ok).toBeTruthy();
+            });
+
+            test("has expected output", () => {
+                const report = chain.apply(input);
+
+                report.ok && expect(report.value).toBe(expectedReport.value);
+            });
+
+            test("has expected stop status", () => {
+                const report = chain.apply(input);
+
+                report.ok && expect(report.stop).toBe(expectedReport.stop);
+            });
+
+            test("has no error field", () => {
+                const report = chain.apply(input);
+
+                expect(report).not.toHaveProperty("error");
+            });
+
+        } else {
+
+            test("has no ok state", () => {
+                const report = chain.apply(input);
+
+                expect(report.ok).toBeFalsy();
+            });
+
+            test("has expected error", () => {
+                const report = chain.apply(input);
+
+                report.ok || expect(report.error).toBe(expectedReport.error);
+            });
+
+            test("has no stop field", () => {
+                const report = chain.apply(input);
+
+                expect(report).not.toHaveProperty("stop");
+            });
+
+            test("has no value field", () => {
+                const report = chain.apply(input);
+
+                expect(report).not.toHaveProperty("value");
+            });
+
+        }
+    };
 
     describe("treat", () => {
 
@@ -49,106 +112,98 @@ describe("chain", () => {
     });
 
     describe("valid input", () => {
-        const chain = treat();
 
         describe("single 'id' step", () => {
-            const c = chain.then(id);
-
+            const chain = treat().then(id);
             const input = Symbol();
-            const expected = input;
+            const report = continueReport(input);
 
-            test("does not throw error", () => {
-                expect(() => c.apply(input)).not.toThrow();
-            });
-
-            test("has ok state", () => {
-                const report = c.apply(input);
-
-                expect(report.ok).toBeTruthy();
-            });
-
-            test("has expected output", () => {
-                const report = c.apply(input);
-
-                report.ok && expect(report.value).toBe(expected);
-            });
-
-            test("has no error field", () => {
-                const report = c.apply(input);
-
-                expect(report).not.toHaveProperty("error");
-            });
-
+            createChainTests(chain, input, report);
         });
 
 
         describe("three converting steps", () => {
-            const c = chain.then(asDate).then(x => continueWith(x.getDay())).then(x => continueWith(x * 2));
-
+            const chain = treat().then(asDate).then(x => continueWith(x.getDay())).then(x => continueWith(x * 2));
             const input = (new Date().toString());
-            const expected = new Date(input).getDay() * 2;
+            const report = continueReport(new Date(input).getDay() * 2);
 
-            test("does not throw error", () => {
-                expect(() => c.apply(input)).not.toThrow();
+            createChainTests(chain, input, report);
+        });
+
+        describe("stop step with same type", () => {
+            const chain = treat()
+                .then(x => x === undefined ? stopWith("(no name)") : continueWith(x))
+                .then(asString)
+                .then(x => continueWith(x.toUpperCase()));
+
+            describe("on continue", () => {
+                const input = "Hello";
+                const report = continueReport("HELLO");
+                createChainTests(chain, input, report);
             });
 
-            test("has ok state", () => {
-                const report = c.apply(input);
+            describe("on stop", () => {
+                const input = undefined;
+                const report = stopReport("(no name)");
+                createChainTests(chain, input, report);
+            });
+        });
 
-                expect(report.ok).toBeTruthy();
+        describe("stop step with different type", () => {
+            const chain = treat()
+                .then(asInteger)
+                .then(x => x % 2 === 0 ? continueWith(x) : stopWith(String(-1 * x)))
+                .then(x => continueWith(x * 2));
+
+            describe("on continue", () => {
+                const input = 6;
+                const report = continueReport(12);
+                createChainTests(chain, input, report);
             });
 
-            test("has expected output", () => {
-                const report = c.apply(input);
-
-                report.ok && expect(report.value).toBe(expected);
+            describe("on stop", () => {
+                const input = 5;
+                const report = stopReport("-5");
+                createChainTests(chain, input, report);
             });
-
-            test("has no error field", () => {
-                const report = c.apply(input);
-
-                expect(report).not.toHaveProperty("error");
-            });
-
         });
 
     });
 
     describe("invalid input", () => {
-        const chain = treat();
 
         describe("single validation step", () => {
             const error = Symbol("error");
-            const c = chain.then(isString, error);
 
+            const chain = treat().then(isString, error);
             const input = 123;
-            const expectedError = error;
+            const report = errorReport(error);
 
-            test("does not throws error", () => {
-                expect(() => c.apply(input)).not.toThrow();
-            });
-
-            test("has no ok state", () => {
-                const report = c.apply(input);
-
-                expect(report.ok).toBeFalsy();
-            });
-
-            test("has expected error", () => {
-                const report = c.apply(input);
-
-                report.ok || expect(report.error).toBe(expectedError);
-            });
-
-            test("has not value field", () => {
-                const report = c.apply(input);
-
-                expect(report).not.toHaveProperty("value");
-            });
-
+            createChainTests(chain, input, report);
         });
 
     });
 
+
+    describe("throwing step", () => {
+
+        describe("with provided step error", () => {
+            const error = Symbol();
+            const chain = treat().then(() => {throw new Error("This is step error")}, error);
+            const input = Symbol();
+            const report = errorReport(error);
+
+            createChainTests(chain, input, report);
+        });
+
+        describe("without provided step error", () => {
+            const chain = treat().then(() => {throw new Error("This is step error")});
+            const input = Symbol();
+            const report = errorReport();
+
+            createChainTests(chain, input, report);
+        });
+
+    })
 
 });
