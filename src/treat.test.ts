@@ -2,6 +2,48 @@ import {continueReport, errorReport, stopReport, treat} from "./treat";
 import {asDate, asInteger, asString, continueWith, id, isString, stopWith} from "./steps";
 import {Chain, ChainReport} from "./types";
 
+describe("helper functions", () => {
+
+    test("continueReport", () => {
+        const value = Symbol();
+        const result = continueReport(value);
+
+        expect(Object.isFrozen(result)).toBeTruthy();
+        expect(result).toEqual({
+            ok: true,
+            stop: false,
+            value,
+            error: undefined,
+        });
+    });
+
+    test("stopReport", () => {
+        const value = Symbol();
+        const result = stopReport(value);
+
+        expect(Object.isFrozen(result)).toBeTruthy();
+        expect(result).toEqual({
+            ok: true,
+            stop: true,
+            value,
+            error: undefined,
+        });
+    });
+
+    test("errorReport", () => {
+        const value = Symbol();
+        const result = errorReport(value);
+
+        expect(Object.isFrozen(result)).toBeTruthy();
+        expect(result).toEqual({
+            ok: false,
+            stop: undefined,
+            value: undefined,
+            error: value,
+        });
+    });
+
+});
 
 describe("chain", () => {
 
@@ -22,13 +64,13 @@ describe("chain", () => {
             test("has expected output", () => {
                 const report = chain.apply(input);
 
-                report.ok && expect(report.value).toBe(expectedReport.value);
+                report.ok && expect(report.value).toEqual(expectedReport.value);
             });
 
             test("has expected stop status", () => {
                 const report = chain.apply(input);
 
-                report.ok && expect(report.stop).toBe(expectedReport.stop);
+                report.ok && expect(report.stop).toEqual(expectedReport.stop);
             });
 
             test("has no error field", () => {
@@ -48,7 +90,7 @@ describe("chain", () => {
             test("has expected error", () => {
                 const report = chain.apply(input);
 
-                report.ok || expect(report.error).toBe(expectedReport.error);
+                report.ok || expect(report.error).toEqual(expectedReport.error);
             });
 
             test("has no stop field", () => {
@@ -189,7 +231,9 @@ describe("chain", () => {
 
         describe("with provided step error", () => {
             const error = Symbol();
-            const chain = treat().then(() => {throw new Error("This is step error")}, error);
+            const chain = treat().then(() => {
+                throw new Error("This is step error")
+            }, error);
             const input = Symbol();
             const report = errorReport(error);
 
@@ -197,7 +241,9 @@ describe("chain", () => {
         });
 
         describe("without provided step error", () => {
-            const chain = treat().then(() => {throw new Error("This is step error")});
+            const chain = treat().then(() => {
+                throw new Error("This is step error")
+            });
             const input = Symbol();
             const report = errorReport();
 

@@ -6,18 +6,21 @@ type ApplyFunction<ChainInput, ChainContinueOutput, ChainStopOutput, ChainError>
  * Creates continue chain report from provided value
  * @param value
  */
-export const continueReport = <T>(value: T): ChainContinueReport<T> => ({ok: true, stop: false, value});
+export const continueReport = <T>(value: T): ChainContinueReport<T> =>
+    Object.freeze({ok: true, stop: false, value});
 
 /**
  * Crates stop chain report from provided value
  * @param value
  */
-export const stopReport = <T>(value: T): ChainStopReport<T> => ({ok: true, stop: true, value});
+export const stopReport = <T>(value: T): ChainStopReport<T> =>
+    Object.freeze({ok: true, stop: true, value});
 
 /**
  * Creates error chain report from provided error
  */
-export const errorReport = <T = undefined>(error?: T): ChainErrorReport<T> => ({ok: false, error});
+export const errorReport = <T = undefined>(error?: T): ChainErrorReport<T> =>
+    Object.freeze({ok: false, error});
 
 
 /**

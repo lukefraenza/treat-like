@@ -4,29 +4,21 @@ import {Step, StepContinueResult, StepErrorResult, StepResult, StepStopResult} f
  * Creates continue step result from provided value
  * @param value
  */
-export const continueWith = <Output>(value: Output): StepContinueResult<Output> => ({
-    ok: true,
-    stop: false,
-    value
-});
+export const continueWith = <Output>(value: Output): StepContinueResult<Output> =>
+    Object.freeze({ok: true, stop: false, value});
 
 /**
  * Crates stop step result from provided value
  * @param value
  */
-export const stopWith = <Output>(value: Output): StepStopResult<Output> => ({
-    ok: true,
-    stop: true,
-    value
-});
+export const stopWith = <Output>(value: Output): StepStopResult<Output> =>
+    Object.freeze({ok: true, stop: true, value});
 
 /**
  * Creates error step result from provided error
  */
-export const error = (): StepErrorResult => ({
-    ok: false,
-});
-
+export const error = (): StepErrorResult =>
+    Object.freeze({ok: false});
 
 /**
  * Creates simple converting step from provided function.
