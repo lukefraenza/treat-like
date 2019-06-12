@@ -1,11 +1,11 @@
 import {treat} from "./treat";
-import {asDate, continueWith, id} from "./steps";
+import {asDate, continueWith, id, isString} from "./steps";
 
 describe("chain", () => {
 
     describe("treat", () => {
 
-        test("completes without errors", () => {
+        test("does not throw error", () => {
             expect(treat).not.toThrow();
         });
 
@@ -48,7 +48,7 @@ describe("chain", () => {
 
     });
 
-    describe("valid continue chain", () => {
+    describe("valid input", () => {
         const chain = treat();
 
         describe("single 'id' step", () => {
@@ -108,6 +108,42 @@ describe("chain", () => {
                 const report = c.apply(input);
 
                 expect(report).not.toHaveProperty("error");
+            });
+
+        });
+
+    });
+
+    describe("invalid input", () => {
+        const chain = treat();
+
+        describe("single validation step", () => {
+            const error = Symbol("error");
+            const c = chain.then(isString, error);
+
+            const input = 123;
+            const expectedError = error;
+
+            test("does not throws error", () => {
+                expect(() => c.apply(input)).not.toThrow();
+            });
+
+            test("has no ok state", () => {
+                const report = c.apply(input);
+
+                expect(report.ok).toBeFalsy();
+            });
+
+            test("has expected error", () => {
+                const report = c.apply(input);
+
+                report.ok || expect(report.error).toBe(expectedError);
+            });
+
+            test("has not value field", () => {
+                const report = c.apply(input);
+
+                expect(report).not.toHaveProperty("value");
             });
 
         });
