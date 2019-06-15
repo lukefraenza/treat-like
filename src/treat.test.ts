@@ -1,5 +1,7 @@
 import {continueReport, errorReport, stopReport, treat} from "./treat";
-import {asDate, asInteger, asString, continueWith, id, isString, stopWith} from "./steps";
+import {continueWith, stopWith} from "./steps";
+import {asDate, asInteger, asString, id} from "./converters"
+import {isString} from "./validators";
 import {Chain, ChainReport} from "./types";
 
 describe("helper functions", () => {

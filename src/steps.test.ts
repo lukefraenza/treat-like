@@ -1,13 +1,4 @@
-import {
-    asFloat,
-    asInteger,
-    asString,
-    continueWith,
-    createConvertingStep,
-    createValidationStep,
-    error,
-    stopWith
-} from "./steps";
+import {continueWith, createConvertingStep, createValidationStep, error, stopWith} from "./steps";
 import {Step, StepResult} from "./types";
 
 describe("helper functions", () => {
@@ -155,30 +146,6 @@ describe("step", () => {
             const input = Date.now();
 
             expect(() => step(input)).toThrow(error);
-        });
-
-    });
-
-    describe("converters", () => {
-
-        describe("asString", () => {
-            createStepTests(asString, 12, continueWith("12"));
-        });
-
-        describe("asInteger", () => {
-            describe("from valid string", () => createStepTests(asInteger, "12", continueWith(12)));
-            describe("from invalid string", () => createStepTests(asInteger, "asd", continueWith(NaN)));
-            describe("from integer", () => createStepTests(asInteger, 23, continueWith(23)));
-            describe("from float", () => createStepTests(asInteger, 44.4, continueWith(44)));
-            describe("from boolean", () => createStepTests(asInteger, true, continueWith(NaN)));
-        });
-
-        describe("asFloat", () => {
-            describe("from valid string", () => createStepTests(asFloat, "12.2", continueWith(12.2)));
-            describe("from invalid string", () => createStepTests(asFloat, "asd", continueWith(NaN)));
-            describe("from integer", () => createStepTests(asFloat, 23, continueWith(23)));
-            describe("from float", () => createStepTests(asFloat, 44.4, continueWith(44.4)));
-            describe("from boolean", () => createStepTests(asFloat, true, continueWith(NaN)));
         });
 
     });
