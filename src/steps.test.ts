@@ -1,13 +1,13 @@
-import {arrayOf, continueWith, createConvertingStep, createValidationStep, error, stopWith} from "./steps";
+import {arrayOf, stepContinueResult, createConvertingStep, createValidationStep, stepErrorResult, stepStopResult} from "./steps";
 import {Step, StepResult} from "./types";
 import {treat} from "./treat";
 import {isString} from "./validators";
 
 describe("helper functions", () => {
 
-    test("continueWith", () => {
+    test("stepContinueResult", () => {
         const value = Symbol();
-        const result = continueWith(value);
+        const result = stepContinueResult(value);
 
         expect(Object.isFrozen(result)).toBeTruthy();
         expect(result).toEqual({
@@ -17,9 +17,9 @@ describe("helper functions", () => {
         });
     });
 
-    test("stopWith", () => {
+    test("stepStopResult", () => {
         const value = Symbol();
-        const result = stopWith(value);
+        const result = stepStopResult(value);
 
         expect(Object.isFrozen(result)).toBeTruthy();
         expect(result).toEqual({
@@ -29,8 +29,8 @@ describe("helper functions", () => {
         });
     });
 
-    test("error", () => {
-        const result = error();
+    test("stepErrorResult", () => {
+        const result = stepErrorResult();
 
         expect(Object.isFrozen(result)).toBeTruthy();
         expect(result).toEqual({
@@ -101,7 +101,7 @@ describe("step", () => {
 
             const step = createConvertingStep(func);
             const input = Date.now();
-            const result = continueWith(func(input));
+            const result = stepContinueResult(func(input));
 
             createStepTests(step, input, result);
         });
@@ -126,14 +126,14 @@ describe("step", () => {
 
         describe("creates step that continues execution on valid data", () => {
             const input = Symbol();
-            const result = continueWith(input);
+            const result = stepContinueResult(input);
 
             createStepTests(step, input, result);
         });
 
         describe("creates step that stops execution on invalid valid data", () => {
             const input = null;
-            const result = error();
+            const result = stepErrorResult();
 
             createStepTests(step, input, result);
         });
@@ -159,7 +159,7 @@ describe("step", () => {
             const step = arrayOf(chain);
 
             const input = ["hello", "world"];
-            const result = continueWith(["HELLO", "WORLD"]);
+            const result = stepContinueResult(["HELLO", "WORLD"]);
 
             createStepTests(step, input, result);
         });
@@ -171,7 +171,7 @@ describe("step", () => {
             const step = arrayOf(chain);
 
             const input = ["hello", 14, "world"];
-            const result = continueWith(["HELLO", "WORLD"]);
+            const result = stepContinueResult(["HELLO", "WORLD"]);
 
             createStepTests(step, input, result);
 

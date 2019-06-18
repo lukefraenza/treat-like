@@ -1,4 +1,4 @@
-import {continueWith, createValidationStep, error} from "./steps";
+import {stepContinueResult, createValidationStep, stepErrorResult} from "./steps";
 import {StepResult} from "./types";
 
 export const gt = (x: number) => createValidationStep<number>(value => value > x);
@@ -12,7 +12,7 @@ export const lte = (x: number) => createValidationStep<number>(value => value <=
  * @param value
  */
 export const notNull = <T>(value: T | null): StepResult<T, never> =>
-    value === null ? error() : continueWith(value);
+    value === null ? stepErrorResult() : stepContinueResult(value);
 
 
 /**
@@ -20,7 +20,7 @@ export const notNull = <T>(value: T | null): StepResult<T, never> =>
  * @param value
  */
 export const defined = <T>(value: T | undefined): StepResult<T, never> =>
-    value === undefined ? error() : continueWith(value);
+    value === undefined ? stepErrorResult() : stepContinueResult(value);
 
 
 /**
@@ -28,7 +28,7 @@ export const defined = <T>(value: T | undefined): StepResult<T, never> =>
  * @param value
  */
 export const provided = <T>(value: T | null | undefined): StepResult<T, never> =>
-    value === undefined || value === null ? error() : continueWith(value);
+    value === undefined || value === null ? stepErrorResult() : stepContinueResult(value);
 
 
 /**
@@ -36,7 +36,7 @@ export const provided = <T>(value: T | null | undefined): StepResult<T, never> =
  * @param value
  */
 export const isString = (value: unknown): StepResult<string, never> =>
-    typeof value === "string" ? continueWith(value) : error();
+    typeof value === "string" ? stepContinueResult(value) : stepErrorResult();
 
 
 /**
@@ -44,7 +44,7 @@ export const isString = (value: unknown): StepResult<string, never> =>
  * @param value
  */
 export const isNumber = (value: unknown): StepResult<number, never> =>
-    typeof value === "number" ? continueWith(value) : error();
+    typeof value === "number" ? stepContinueResult(value) : stepErrorResult();
 
 
 /**
@@ -52,5 +52,5 @@ export const isNumber = (value: unknown): StepResult<number, never> =>
  * @param value
  */
 export const isBoolean = (value: unknown): StepResult<boolean, never> =>
-    typeof value === "boolean" ? continueWith(value) : error();
+    typeof value === "boolean" ? stepContinueResult(value) : stepErrorResult();
 

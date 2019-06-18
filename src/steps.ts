@@ -4,20 +4,20 @@ import {Chain, Step, StepContinueResult, StepErrorResult, StepStopResult} from "
  * Creates continue step result from provided value
  * @param value
  */
-export const continueWith = <Output>(value: Output): StepContinueResult<Output> =>
+export const stepContinueResult = <Output>(value: Output): StepContinueResult<Output> =>
     Object.freeze({ok: true, stop: false, value});
 
 /**
  * Crates stop step result from provided value
  * @param value
  */
-export const stopWith = <Output>(value: Output): StepStopResult<Output> =>
+export const stepStopResult = <Output>(value: Output): StepStopResult<Output> =>
     Object.freeze({ok: true, stop: true, value});
 
 /**
  * Creates error step result from provided error
  */
-export const error = (): StepErrorResult =>
+export const stepErrorResult = (): StepErrorResult =>
     Object.freeze({ok: false});
 
 /**
@@ -25,7 +25,7 @@ export const error = (): StepErrorResult =>
  * @param f converting function
  */
 export function createConvertingStep<Input, Output>(f: (x: Input) => Output): Step<Input, Output, never> {
-    return (value: Input) => continueWith(f(value))
+    return (value: Input) => stepContinueResult(f(value))
 }
 
 /**
@@ -36,7 +36,7 @@ export function createValidationStep<Input>(p: (x: Input) => boolean): Step<Inpu
     return (value: Input) => {
         const valid = p(value);
 
-        return valid ? continueWith(value) : error();
+        return valid ? stepContinueResult(value) : stepErrorResult();
     }
 }
 
@@ -52,9 +52,9 @@ export function arrayOf<ChainInput, ChainContinueOutput, ChainStopOutput = never
         const ok = !reports.find(r => !r.ok);
 
         if (ok) {
-            return continueWith((reports as any).map((r: any) => r.value))
+            return stepContinueResult((reports as any).map((r: any) => r.value))
         }
 
-        return error();
+        return stepErrorResult();
     }
 }

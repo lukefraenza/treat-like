@@ -1,9 +1,9 @@
-import {continueWith, createConvertingStep} from "./steps";
+import {stepContinueResult, createConvertingStep} from "./steps";
 
 /**
  * Id step. Does nothing Just passes provided value thru
  */
-export const id = continueWith;
+export const id = stepContinueResult;
 
 
 /**
@@ -13,7 +13,7 @@ export const asString = createConvertingStep(String);
 
 /**
  * Tries to convert value to integer number.
- * If a value can't be converted or converting result is NaN, throws an error
+ * If a value can't be converted or converting result is NaN, throws an stepErrorResult
  */
 export const asInteger = createConvertingStep<unknown, number>(value => {
     switch (typeof value) {
@@ -37,7 +37,7 @@ export const asInteger = createConvertingStep<unknown, number>(value => {
 
 /**
  * Tries to convert value to float number.
- * If a value can't be converted or converting result is NaN, throws an error
+ * If a value can't be converted or converting result is NaN, throws an stepErrorResult
  */
 export const asFloat = createConvertingStep<unknown, number>(value => {
     switch (typeof value) {
@@ -61,7 +61,7 @@ export const asFloat = createConvertingStep<unknown, number>(value => {
 
 /**
  * Tries to convert provided string or number to Date object.
- * If a value can't be converted or converting result is invalid date, throws an error
+ * If a value can't be converted or converting result is invalid date, throws an stepErrorResult
  */
 export const asDate = createConvertingStep<number | string, Date>(value => {
     const date = new Date(value);

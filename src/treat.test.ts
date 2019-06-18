@@ -1,5 +1,5 @@
 import {continueReport, errorReport, stopReport, treat} from "./treat";
-import {continueWith, stopWith} from "./steps";
+import {stepContinueResult, stepStopResult} from "./steps";
 import {asDate, asInteger, asString, id} from "./converters"
 import {isString} from "./validators";
 import {Chain, ChainReport} from "./types";
@@ -167,7 +167,7 @@ describe("chain", () => {
 
 
         describe("three converting steps", () => {
-            const chain = treat().then(asDate).then(x => continueWith(x.getDay())).then(x => continueWith(x * 2));
+            const chain = treat().then(asDate).then(x => stepContinueResult(x.getDay())).then(x => stepContinueResult(x * 2));
             const input = (new Date().toString());
             const report = continueReport(new Date(input).getDay() * 2);
 
@@ -176,9 +176,9 @@ describe("chain", () => {
 
         describe("stop step with same type", () => {
             const chain = treat()
-                .then(x => x === undefined ? stopWith("(no name)") : continueWith(x))
+                .then(x => x === undefined ? stepStopResult("(no name)") : stepContinueResult(x))
                 .then(asString)
-                .then(x => continueWith(x.toUpperCase()));
+                .then(x => stepContinueResult(x.toUpperCase()));
 
             describe("on continue", () => {
                 const input = "Hello";
@@ -196,8 +196,8 @@ describe("chain", () => {
         describe("stop step with different type", () => {
             const chain = treat()
                 .then(asInteger)
-                .then(x => x % 2 === 0 ? continueWith(x) : stopWith(String(-1 * x)))
-                .then(x => continueWith(x * 2));
+                .then(x => x % 2 === 0 ? stepContinueResult(x) : stepStopResult(String(-1 * x)))
+                .then(x => stepContinueResult(x * 2));
 
             describe("on continue", () => {
                 const input = 6;
