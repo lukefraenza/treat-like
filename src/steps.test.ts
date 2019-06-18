@@ -1,5 +1,7 @@
-import {continueWith, createConvertingStep, createValidationStep, error, stopWith} from "./steps";
+import {arrayOf, continueWith, createConvertingStep, createValidationStep, error, stopWith} from "./steps";
 import {Step, StepResult} from "./types";
+import {treat} from "./treat";
+import {isString} from "./validators";
 
 describe("helper functions", () => {
 
@@ -148,6 +150,33 @@ describe("step", () => {
             expect(() => step(input)).toThrow(error);
         });
 
+    });
+
+    describe("arrayOf", () => {
+
+        describe("returns array of expected values on valid input", () => {
+            const chain = treat().then(isString).then(createConvertingStep(x => x.toUpperCase()));
+            const step = arrayOf(chain);
+
+            const input = ["hello", "world"];
+            const result = continueWith(["HELLO", "WORLD"]);
+
+            createStepTests(step, input, result);
+        });
+
+
+        describe("returns errors in place of invalid items", () => {
+            const error = new Error("Not string");
+            const chain = treat().then(isString, error).then(createConvertingStep(x => x.toUpperCase()));
+            const step = arrayOf(chain);
+
+            const input = ["hello", 14, "world"];
+            const result = continueWith(["HELLO", "WORLD"]);
+
+            createStepTests(step, input, result);
+
+            // TODO: Implement this logic
+        });
     });
 
 });

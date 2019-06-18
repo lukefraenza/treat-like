@@ -1,4 +1,4 @@
-import {Step, StepContinueResult, StepErrorResult, StepStopResult} from "./types";
+import {Chain, Step, StepContinueResult, StepErrorResult, StepStopResult} from "./types";
 
 /**
  * Creates continue step result from provided value
@@ -41,5 +41,20 @@ export function createValidationStep<Input>(p: (x: Input) => boolean): Step<Inpu
 }
 
 
+/**
+ * Creates array processing step
+ * Applies specified chain to each element of array
+ * @param chain
+ */
+export function arrayOf<ChainInput, ChainContinueOutput, ChainStopOutput = never, ChainError = never>(chain: Chain<ChainInput, ChainContinueOutput, ChainStopOutput, ChainError>): Step<ChainInput[], ChainContinueOutput[], ChainStopOutput[]> {
+    return (input: ChainInput[]) => {
+        const reports = input.map(chain.apply);
+        const ok = !reports.find(r => !r.ok);
 
+        if (ok) {
+            return continueWith((reports as any).map((r: any) => r.value))
+        }
 
+        return error();
+    }
+}
